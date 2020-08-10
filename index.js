@@ -14,20 +14,33 @@ admin.initializeApp({
 const db = admin.firestore();
 
 // read PoI
-app.get('/api/poi/:poi_id', (req, res) => {
+app.get('/api/poi/:region_id/:poi_id', (req, res) => {
     (async() => {
         try {
-            const document = db.collection('poi').doc(req.params.poi_id);
+            const document = db.collection('region').doc(req.params.region_id).collection('poi').doc(req.params.poi_id);
             let item = await document.get();
             if (!item.exists)
                 return res.status(404).send("Data does not exist");
             let response = item.data();
             return res.status(200).send(response);
         } catch (error) {
-            console.log(error);
             return res.status(500).send(error);
         }
     })();
+});
+
+app.post('/api/blop', (req, res) => {
+    (
+        async() => {
+            try {
+                const document = db.collection('region').doc('graubünden').collection('poi').doc('schauenstein');
+                let item = await document.get();
+                await db.collection('region').doc('graubunden').collection('poi').doc('schauenstein').set(item.data());
+                return res.status(200).send();
+            } catch (error) {
+                return res.status(500).send(error);
+            }
+        })();
 });
 
 // create
