@@ -29,19 +29,53 @@ app.get('/api/poi/:region_id/:poi_id', (req, res) => {
     })();
 });
 
-app.post('/api/blop', (req, res) => {
-    (
-        async() => {
-            try {
-                const document = db.collection('region').doc('graubünden').collection('poi').doc('schauenstein');
-                let item = await document.get();
-                await db.collection('region').doc('graubunden').collection('poi').doc('schauenstein').set(item.data());
-                return res.status(200).send();
-            } catch (error) {
-                return res.status(500).send(error);
+app.get('/api/region/:region_id', (req, res) => {
+    (async() => {
+        try {
+            const document = db.collection('region').doc(req.params.region_id);
+            let region = await document.get();
+            if (!region.exists)
+                return res.status(404).send("Region does not exist");
+            let region_data = region.data();
+            let response = {
+                name: region_data.name,
+                description: region_data.description,
+                images: region_data.images
             }
-        })();
-});
+            let restaurants = [];
+            let hotels = [];
+            let tips = [];
+            const poi_query = db.collection('region').doc(req.params.region_id).collection('poi');
+            await poi_query.get().then(querySnapshot => {
+                let pois = querySnapshot.docs;
+                for (let currentPoi of pois) {
+                    const shortPoi = {
+                        nextUrl: "/" + currentPoi.id,
+                        image: currentPoi.data().images[0],
+                        name: currentPoi.data().name,
+                        address: currentPoi.data().address,
+                        rate: currentPoi.data().comments[0].rate
+                    }
+                    if (currentPoi.data().type == "restaurant")
+                        restaurants.push(shortPoi);
+                    else if (currentPoi.data().type == "hotel")
+                        hotels.push(shortPoi);
+                    else if (currentPoi.data().type == "tips")
+                        tips.push(shortPoi);
+                }
+            });
+            if (restaurants.length > 0)
+                response.restaurants = restaurants
+            if (hotels.length > 0)
+                response.hotels = hotels
+            if (tips.length > 0)
+                response.tips = tips
+            return res.status(200).send(response);
+        } catch (error) {
+            return res.status(500).send(error);
+        }
+    })();
+})
 
 // create
 app.post('/api/create', (req, res) => {
