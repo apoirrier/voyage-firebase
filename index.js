@@ -40,11 +40,12 @@ app.get('/api/region/:region_id', (req, res) => {
             let response = {
                 name: region_data.name,
                 description: region_data.description,
-                images: region_data.images
+                images: region_data.images,
+                generalTabs: region_data.generalTabs
             }
             let restaurants = [];
             let hotels = [];
-            let tips = [];
+            let activities = [];
             const poi_query = db.collection('region').doc(req.params.region_id).collection('poi');
             await poi_query.get().then(querySnapshot => {
                 let pois = querySnapshot.docs;
@@ -54,22 +55,22 @@ app.get('/api/region/:region_id', (req, res) => {
                         image: currentPoi.data().images[0],
                         name: currentPoi.data().name,
                         address: currentPoi.data().address,
-                        rate: currentPoi.data().comments[0].rate
+                        rate: currentPoi.data().comments[0].rate,
                     }
                     if (currentPoi.data().type == "restaurant")
                         restaurants.push(shortPoi);
                     else if (currentPoi.data().type == "hotel")
                         hotels.push(shortPoi);
-                    else if (currentPoi.data().type == "tips")
-                        tips.push(shortPoi);
+                    else if (currentPoi.data().type == "activity")
+                        activities.push(shortPoi);
                 }
             });
             if (restaurants.length > 0)
                 response.restaurants = restaurants
             if (hotels.length > 0)
                 response.hotels = hotels
-            if (tips.length > 0)
-                response.tips = tips
+            if (activities.length > 0)
+                response.activities = activities
             return res.status(200).send(response);
         } catch (error) {
             return res.status(500).send(error);
