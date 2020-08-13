@@ -21,7 +21,10 @@ app.get('/api/poi/:region_id/:poi_id', (req, res) => {
             let item = await document.get();
             if (!item.exists)
                 return res.status(404).send("Data does not exist");
+            const region = db.collection('region').doc(req.params.region_id);
+            let region_doc = await region.get();
             let response = item.data();
+            response.parentName = region_doc.data().name;
             return res.status(200).send(response);
         } catch (error) {
             return res.status(500).send(error);
