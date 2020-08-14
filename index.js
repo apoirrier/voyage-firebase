@@ -60,6 +60,19 @@ app.post('/api/create/:region_id/:poi_id', (req, res) => {
     })();
 });
 
+// Update PoI
+app.post('/api/update/:region_id/:poi_id', (req, res) => {
+    (async() => {
+        try {
+            const document = db.collection('region').doc(req.params.region_id).collection('poi').doc(req.params.poi_id);
+            await document.update(req.body);
+            return res.status(200).send();
+        } catch (error) {
+            return res.status(500).send(error);
+        }
+    })();
+});
+
 // Delete PoI
 app.delete('/api/delete/:region_id/:poi_id', (req, res) => {
     (async() => {
@@ -96,7 +109,7 @@ app.get('/api/region/:region_id', (req, res) => {
                 let pois = querySnapshot.docs;
                 for (let currentPoi of pois) {
                     const shortPoi = {
-                        nextUrl: "/" + currentPoi.id,
+                        nextUrl: currentPoi.id,
                         name: currentPoi.data().name,
                         address: currentPoi.data().address,
                     }
