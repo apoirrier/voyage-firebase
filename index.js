@@ -32,6 +32,48 @@ app.get('/api/poi/:region_id/:poi_id', (req, res) => {
     })();
 });
 
+// Create PoI
+app.post('/api/create/:region_id/:poi_id', (req, res) => {
+    (async() => {
+        try {
+            const document = db.collection('region').doc(req.params.region_id).collection('poi').doc(req.params.poi_id);
+            let item = await document.get();
+            if (item.exists)
+                return res.status(500).send("Point of interest already exists");
+            const data = {
+                "website": "",
+                "address": "",
+                "iframeUrl": "",
+                "name": req.body.name,
+                "phone": "",
+                "description": "",
+                "comments": [],
+                "images": [],
+                "type": req.body.type,
+                "mail": "",
+            };
+            await db.collection('region').doc(req.params.region_id).collection('poi').doc('/' + req.params.poi_id + '/').create(data);
+            return res.status(200).send();
+        } catch (error) {
+            return res.status(500).send(error);
+        }
+    })();
+});
+
+// Delete PoI
+app.delete('/api/delete/:region_id/:poi_id', (req, res) => {
+    (async() => {
+        try {
+            const document = db.collection('region').doc(req.params.region_id).collection('poi').doc(req.params.poi_id);
+            await document.delete();
+            return res.status(200).send();
+        } catch (error) {
+            return res.status(500).send(error);
+        }
+    })();
+});
+
+// get region
 app.get('/api/region/:region_id', (req, res) => {
     (async() => {
         try {
@@ -55,11 +97,13 @@ app.get('/api/region/:region_id', (req, res) => {
                 for (let currentPoi of pois) {
                     const shortPoi = {
                         nextUrl: "/" + currentPoi.id,
-                        image: currentPoi.data().images[0],
                         name: currentPoi.data().name,
                         address: currentPoi.data().address,
-                        rate: currentPoi.data().comments[0].rate,
                     }
+                    if (currentPoi.data().images.length > 0)
+                        shortPoi.image = currentPoi.data().images[0];
+                    if (currentPoi.data().comments.length > 0)
+                        shortPoi.rate = currentPoi.data().comments[0].rate;
                     if (currentPoi.data().type == "restaurant")
                         restaurants.push(shortPoi);
                     else if (currentPoi.data().type == "hotel")
@@ -68,18 +112,32 @@ app.get('/api/region/:region_id', (req, res) => {
                         activities.push(shortPoi);
                 }
             });
-            if (restaurants.length > 0)
-                response.restaurants = restaurants
-            if (hotels.length > 0)
-                response.hotels = hotels
             if (activities.length > 0)
-                response.activities = activities
+                response.activities = activities;
+            if (hotels.length > 0)
+                response.hotels = hotels;
+            if (restaurants.length > 0)
+                response.restaurants = restaurants;
             return res.status(200).send(response);
         } catch (error) {
             return res.status(500).send(error);
         }
     })();
 })
+
+// copy Schauenstein
+app.post('/api/copy/:poi_id', (req, res) => {
+    (async() => {
+        try {
+            const document = db.collection('region').doc('graubunden').collection('poi').doc('schauenstein');
+            let item = await document.get();
+            await db.collection('region').doc('graubunden').collection('poi').doc('/' + req.params.poi_id + '/').create(item.data());
+            return res.status(200).send();
+        } catch (error) {
+            return res.status(500).send(error);
+        }
+    })();
+});
 
 // create
 app.post('/api/create', (req, res) => {
